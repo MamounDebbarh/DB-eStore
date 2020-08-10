@@ -1,0 +1,341 @@
+-- -----------------------------------------------------
+-- Schema p2db
+-- -----------------------------------------------------
+
+-- -----------------------------------------------------
+-- Schema p2db
+-- -----------------------------------------------------
+CREATE SCHEMA IF NOT EXISTS p2db DEFAULT CHARACTER SET utf8 ;
+USE p2db ;
+
+-- -----------------------------------------------------
+-- Table p2db.`person`
+-- -----------------------------------------------------
+create table if not exists person (
+ID INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
+forename VARCHAR(45) NOT NULL,
+middle_initials VARCHAR(45) NULL DEFAULT NULL,
+surname VARCHAR(45) NOT NULL,
+date_of_birth DATE NOT NULL,
+PRIMARY KEY (ID));
+
+
+
+-- -----------------------------------------------------
+-- Table p2db.`contributor`
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS contributor(
+  person_ID INT(10) UNSIGNED NOT NULL,
+  biographie TEXT NULL DEFAULT NULL,
+  PRIMARY KEY (person_ID),
+  CONSTRAINT fk_Contributor_Person1
+    FOREIGN KEY (person_ID)
+    REFERENCES person (ID)
+    ON DELETE CASCADE
+    ON UPDATE RESTRICT);
+
+
+
+-- -----------------------------------------------------
+-- Table p2db.`publisher`
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS publisher (
+  name VARCHAR(45) NOT NULL,
+  building VARCHAR(45) NOT NULL,
+  street VARCHAR(45) NULL DEFAULT NULL,
+  city VARCHAR(45) NULL DEFAULT NULL,
+  country VARCHAR(45) NOT NULL,
+  postcode VARCHAR(45) NOT NULL,
+  phone_number VARCHAR(45) NOT NULL,
+  established_date DATE NOT NULL,
+  PRIMARY KEY (name));
+
+
+-- -----------------------------------------------------
+-- Table p2db.`audiobook`
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS audiobook (
+  ISBN VARCHAR(45) NOT NULL,
+  title VARCHAR(45) NULL DEFAULT NULL,
+  running_time TIME NOT NULL,
+  age_rating INT(11) NULL DEFAULT NULL,
+  purchase_price DECIMAL NOT NULL,
+  published_date DATE NOT NULL,
+  audiofile BLOB NULL DEFAULT NULL,
+  narrator_ID INT(10) UNSIGNED NOT NULL,
+  publisher_name VARCHAR(45) NOT NULL,
+  PRIMARY KEY (ISBN),
+  CONSTRAINT fk_audiobook_contributor1
+    FOREIGN KEY (narrator_ID)
+    REFERENCES contributor (person_ID)
+    ON DELETE CASCADE
+    ON UPDATE CASCADE,
+  CONSTRAINT fk_audiobook_publisher1
+    FOREIGN KEY (publisher_name)
+    REFERENCES publisher (name)
+    ON DELETE CASCADE
+    ON UPDATE RESTRICT);
+
+
+-- -----------------------------------------------------
+-- Table p2db.`audiobook_authors`
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS audiobook_authors (
+  contributor_ID INT(10) UNSIGNED NOT NULL,
+  ISBN VARCHAR(45) NOT NULL,
+  PRIMARY KEY (contributor_ID, ISBN),
+  CONSTRAINT fk_audiobook_authors_audiobook1
+    FOREIGN KEY (ISBN)
+    REFERENCES audiobook (ISBN)
+    ON DELETE CASCADE
+    ON UPDATE RESTRICT,
+  CONSTRAINT fk_audiobook_authors_contributor1
+    FOREIGN KEY (contributor_ID)
+    REFERENCES contributor (person_ID)
+    ON DELETE CASCADE
+    ON UPDATE RESTRICT);
+
+
+-- -----------------------------------------------------
+-- Table p2db.`customer`
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS customer (
+  person_ID INT(10) UNSIGNED NOT NULL,
+  email_address VARCHAR(45) NULL DEFAULT NULL,
+  PRIMARY KEY (person_ID),
+  CONSTRAINT fk_table1_Person
+    FOREIGN KEY (person_ID)
+    REFERENCES person (ID)
+    ON DELETE CASCADE
+    ON UPDATE RESTRICT);
+
+
+-- -----------------------------------------------------
+-- Table p2db.`audiobook_pruchases`
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS audiobook_purchases (
+  customer_ID INT(10) UNSIGNED NOT NULL,
+  ISBN VARCHAR(45) NOT NULL,
+  purchase_date DATETIME NOT NULL,
+  PRIMARY KEY (customer_ID, ISBN),
+  CONSTRAINT fk_audiobook_purchases_audiobook1
+    FOREIGN KEY (ISBN)
+    REFERENCES audiobook (ISBN)
+    ON DELETE CASCADE
+    ON UPDATE RESTRICT,
+  CONSTRAINT fk_audiobook_purchases_customer1
+    FOREIGN KEY (customer_ID)
+    REFERENCES customer (person_ID)
+    ON DELETE CASCADE
+    ON UPDATE RESTRICT);
+
+
+-- -----------------------------------------------------
+-- Table p2db.`audiobook_reviews`
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS audiobook_reviews (
+  customer_ID INT(10) UNSIGNED NOT NULL,
+  ISBN VARCHAR(45) NOT NULL,
+  rating INT(11) NOT NULL,
+  title VARCHAR(45) NULL DEFAULT NULL,
+  comment TEXT NULL DEFAULT NULL,
+  verified TINYINT(4) NOT NULL,
+  PRIMARY KEY (customer_ID, ISBN),
+  CONSTRAINT fk_audiobook_reviews_audiobook1
+    FOREIGN KEY (ISBN)
+    REFERENCES audiobook (ISBN)
+    ON DELETE CASCADE
+    ON UPDATE RESTRICT,
+  CONSTRAINT fk_audiobook_reviews_customer1
+    FOREIGN KEY (customer_ID)
+    REFERENCES customer (person_ID)
+    ON DELETE CASCADE
+    ON UPDATE RESTRICT);
+
+
+-- -----------------------------------------------------
+-- Table p2db.`chapter`
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS chapter (
+  ISBN VARCHAR(45) NOT NULL,
+  number INT(11) NOT NULL,
+  title VARCHAR(80) NOT NULL,
+  start TIME NOT NULL,
+  PRIMARY KEY (ISBN, number),
+  CONSTRAINT fk_chapter_audiobook1
+    FOREIGN KEY (ISBN)
+    REFERENCES audiobook (ISBN)
+    ON DELETE CASCADE
+    ON UPDATE RESTRICT);
+
+
+-- -----------------------------------------------------
+-- Table p2db.`phone_number`
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS phone_number (
+  customer_ID INT(10) UNSIGNED NOT NULL,
+  phone_number VARCHAR(45) NOT NULL,
+  PRIMARY KEY (customer_ID, phone_number),
+  CONSTRAINT fk_phone_number_customer1
+    FOREIGN KEY (customer_ID)
+    REFERENCES customer (person_ID)
+    ON DELETE CASCADE
+    ON UPDATE RESTRICT);
+
+
+
+
+
+//POPULATE PERSON TABLE 
+LOAD DATA LOCAL INFILE 'Documents/cs3101/P2/person.csv' replace INTO TABLE person FIELDS TERMINATED BY ',' LINES TERMINATED BY '\n'(forename,middle_initials,surname,date_of_birth) SET ID = NULL;
+//POPULATE CONTRIBUTOR
+LOAD DATA LOCAL INFILE 'Documents/cs3101/P2/contributor.csv' replace INTO TABLE contributor FIELDS TERMINATED BY '|' LINES TERMINATED BY '\n'(person_ID,biographie);
+//POPULATE CUSTOMER
+LOAD DATA LOCAL INFILE 'Documents/cs3101/P2/customer.csv' replace INTO TABLE customer FIELDS TERMINATED BY ',' LINES TERMINATED BY '\n'(person_ID,email_address);
+//POPULATER PHONE_NUMBER
+LOAD DATA LOCAL INFILE 'Documents/cs3101/P2/phone_number.csv' replace INTO TABLE phone_number FIELDS TERMINATED BY ',' LINES TERMINATED BY '\n'(customer_ID,phone_number);
+//POPULATE PUBLISHER
+LOAD DATA LOCAL INFILE 'Documents/cs3101/P2/publisher.csv' replace INTO TABLE publisher FIELDS TERMINATED BY ',' LINES TERMINATED BY '\n';
+//POPULATE AUDIOBOOK
+LOAD DATA LOCAL INFILE 'Documents/cs3101/P2/audiobook.csv' replace INTO TABLE audiobook FIELDS TERMINATED BY ',' LINES TERMINATED BY '\n';
+//POPULATE CHAPTER
+LOAD DATA LOCAL INFILE 'Documents/cs3101/P2/chapter.csv' replace INTO TABLE chapter FIELDS TERMINATED BY ';' LINES TERMINATED BY '\n';
+//POPULATE audiobook_authors
+LOAD DATA LOCAL INFILE 'Documents/cs3101/P2/audiobook_authors.csv' replace INTO TABLE audiobook_authors FIELDS TERMINATED BY ',' LINES TERMINATED BY '\n';
+//POPULATE audiobook_purchases
+LOAD DATA LOCAL INFILE 'Documents/cs3101/P2/audiobook_purchases.csv' replace INTO TABLE audiobook_purchases FIELDS TERMINATED BY ',' LINES TERMINATED BY '\n';
+//POPULATE audiobook_reviews
+LOAD DATA LOCAL INFILE 'Documents/cs3101/P2/audiobook_reviews.csv' replace INTO TABLE audiobook_reviews FIELDS TERMINATED BY ';' LINES TERMINATED BY '\n';
+
+//Q1
+CREATE SQL SECURITY INVOKER VIEW q1 AS
+SELECT
+customer.person_ID AS customer_ID,
+customer.email_address,
+CONCAT(person.surname, ' ', person.forename, ' ',person.middle_initials) AS full_name,
+Count(audiobook_purchases.customer_ID) AS number_books,
+IFNULL(ROUND(SUM(audiobook.purchase_price),2),0.00) AS total_spending
+FROM customer JOIN person ON person.ID = customer.person_ID LEFT JOIN audiobook_purchases ON audiobook_purchases.customer_ID=customer.person_ID LEFT JOIN audiobook ON audiobook_purchases.ISBN= audiobook.ISBN
+GROUP BY customer.person_ID ORDER BY total_spending DESC, full_name;
+
+
+//Q2
+CREATE SQL SECURITY INVOKER VIEW q2 AS
+SELECT
+audiobook.ISBN,
+audiobook.title
+FROM audiobook WHERE ISBN NOT IN (SELECT ISBN FROM audiobook_purchases) ORDER BY audiobook.title
+GROUP BY audiobook.ISBN;
+
+//Q3
+CREATE SQL SECURITY INVOKER VIEW q3 AS
+SELECT 
+contributor.person_ID AS contributor_ID,
+CONCAT(person.surname, ' ', person.forename, ' ',person.middle_initials) AS full_name,
+group_concat(DISTINCT audiobook.title ORDER BY audiobook.title,"")AS book
+FROM contributor LEFT JOIN person ON contributor.person_ID = person.ID LEFT JOIN audiobook_authors ON audiobook_authors.contributor_ID = contributor.person_ID JOIN audiobook ON audiobook.narrator_ID=contributor.person_ID OR audiobook.ISBN = audiobook_authors.ISBN
+JOIN audiobook_purchases ON audiobook_purchases.customer_ID = contributor.person_ID AND audiobook_purchases.ISBN = audiobook.ISBN
+group by (person.id);
+
+
+
+//TRIGGERS.
+
+//T1
+DELIMITER $$
+CREATE OR REPLACE TRIGGER t1be
+BEFORE INSERT ON audiobook_reviews
+FOR EACH ROW
+BEGIN
+DECLARE stu INT;
+SET stu = (SELECT count(audiobook_purchases.customer_ID) FROM audiobook_purchases WHERE  (NEW.ISBN= audiobook_purchases.ISBN) AND ( NEW.customer_ID = audiobook_purchases.customer_ID));
+IF NEW.rating NOT BETWEEN 1 AND 5
+THEN
+SIGNAL SQLSTATE '45000'
+SET MESSAGE_TEXT = 'Rating is not valid';
+END IF;
+IF (stu > 0)
+THEN
+SET NEW.verified = 1;
+ELSE 
+SET NEW.verified = 0;
+END IF;
+END;
+$$
+DELIMITER ;
+
+
+//T2
+
+
+DELIMITER $$
+CREATE OR REPLACE TRIGGER t2a
+BEFORE INSERT ON audiobook_purchases
+FOR EACH ROW
+BEGIN
+DECLARE age INT;
+DECLARE thresh INT;
+SET thresh = (SELECT age_rating FROM audiobook WHERE(NEW.ISBN = audiobook.ISBN));
+SET age = (SELECT TIMESTAMPDIFF(YEAR,date_of_birth,CURDATE()) FROM person WHERE (NEW.customer_ID = person.ID));
+IF (age < thresh)
+THEN
+SIGNAL SQLSTATE '45000'
+SET MESSAGE_TEXT = 'TOO YOUNG!';
+END IF;
+END;
+$$
+DELIMITER ;
+
+
+//T3 
+
+// insertCustomer
+
+DELIMITER $$
+CREATE OR REPLACE PROCEDURE insertCustomer(IN
+ID INT(10),
+forename VARCHAR(45), 
+middle_initials VARCHAR(45), 
+surname VARCHAR(45), 
+date_of_birth DATE, 
+email_address VARCHAR(45) )
+BEGIN
+INSERT INTO person VALUES(ID,forename,middle_initials,surname,date_of_birth);
+INSERT INTO customer VALUES(ID,email_address);
+END;
+$$
+DELIMITER ;
+
+//insertContributor
+
+DELIMITER $$
+DELIMITER $$
+CREATE OR REPLACE PROCEDURE insertContributor(IN
+ID INT(10),
+forename VARCHAR(45), 
+middle_initials VARCHAR(45), 
+surname VARCHAR(45), 
+date_of_birth DATE, 
+biographie TEXT)
+BEGIN
+INSERT INTO person VALUES(ID,forename,middle_initials,surname,date_of_birth);
+INSERT INTO contributor VALUES(ID,biographie);
+END;
+$$
+DELIMITER ;
+
+
+
+
+
+//Query 
+SELECT 
+CONCAT(person.surname, ' ', person.forename, ' ',person.middle_initials) AS full_name,
+audiobook_reviews.rating,
+audiobook_reviews.title,
+audiobook_reviews.comment
+FROM audiobook_reviews LEFT JOIN customer ON customer.person_ID = audiobook_reviews.customer_ID LEFT JOIN person ON person.ID = customer.person_ID;
+
+//Query
+SELECT audiobook.title, audiobook.ISBN, group_concat(DISTINCT CONCAT(person.surname, ' ', person.forename, ' ',person.middle_initials),"")AS authors, audiobook.purchase_price, audiobook.published_date, audiobook.publisher_name FROM audiobook LEFT JOIN audiobook_authors ON audiobook.ISBN = audiobook_authors.ISBN LEFT JOIN contributor ON contributor.person_ID = audiobook_authors.contributor_ID LEFT JOIN person ON person.ID = contributor.person_ID group by (audiobook.title);
+
